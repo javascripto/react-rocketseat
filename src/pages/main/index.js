@@ -5,7 +5,9 @@ import api from '../../services/api';
 
 export default class Main extends Component {
   state = {
-    products : []
+    page: 1,
+    products : [],
+    productInfo: {}
   }
 
   componentDidMount() {
@@ -13,23 +15,42 @@ export default class Main extends Component {
     window.componente = this;
   }
 
-  loadProducts = async () => {
-    const response = await api.get('/products');
-    this.setState({ products: response.data.docs })
+  loadProducts = async (page = 1) => {
+    const response = await api.get(`/products?page=${page}`);
+    const { docs, ...productInfo } = response.data;
+
+    this.setState({ products: docs, productInfo, page });
+  }
+
+  nextPage = () => {
+    const { page, productInfo } = this.state;
+    if ( page === productInfo.pages) return;
+    this.loadProducts(page +1);
+  }
+
+  prevPage = () => {
+    const { page } = this.state;
+    if ( page === 1) return;
+    this.loadProducts(page -1);
   }
 
   render() {
-    const { products } = this.state; 
+    const { products, page, productInfo: { pages } } = this.state;
+    const [ disablePrev, disableNext ] = [ page === 1, page === pages ];
 
     return (
       <div className="product-list">
         { products.map(product => 
-        <article key={product._id}>
-          <strong>{product.title}</strong>
-          <p>{product.description}</p>
-          <a href="#">Acessar</a>
-        </article>
+          <article key={product._id}>
+            <strong>{product.title}</strong>
+            <p>{product.description}</p>
+            <a href="#">Acessar</a>
+          </article>
         )}
+        <div className="actions">
+          <button disabled={disablePrev} onClick={this.prevPage}>Anterior</button>
+          <button disabled={disableNext} onClick={this.nextPage}>Próximo</button>
+        </div>
       </div>
     )
   }
